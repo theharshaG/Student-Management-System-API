@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Student Manager</title>
+</head>
+<body>
+
+<h1>Student Management</h1>
+
+<!-- ADD -->
+<h3>Add Student</h3>
+<input id="name" placeholder="Name">
+<input id="age" placeholder="Age">
+<button onclick="addStudent()">Add</button>
+
+<!-- SEARCH -->
+<h3>Search</h3>
+<input id="searchName" placeholder="Search name">
+<button onclick="searchStudent()">Search</button>
+
+<!-- FILTER -->
+<h3>Filter by Age</h3>
+<input id="filterAge" placeholder="Enter age">
+<button onclick="filterStudent()">Filter</button>
+
+<!-- TOTAL -->
+<h3>Total Students: <span id="total"></span></h3>
+
+<!-- LIST -->
+<h2>Student List</h2>
+<ul id="list"></ul>
+
+<script>
+function addStudent() {
+    let name = document.getElementById("name").value;
+    let age = document.getElementById("age").value;
+
+    fetch("/add", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name, age})
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        loadStudents();
+    });
+}
+
+function loadStudents() {
+    fetch("/students")
+    .then(res => res.json())
+    .then(data => {
+        showData(data);
+        loadCount();
+    });
+}
+
+function showData(data) {
+    let list = document.getElementById("list");
+    list.innerHTML = "";
+
+    data.forEach(s => {
+        let li = document.createElement("li");
+
+        li.innerHTML = `
+            ${s.name} (${s.age})
+            <button onclick="editStudent(${s.id}, '${s.name}', ${s.age})">Edit</button>
+            <button onclick="deleteStudent(${s.id})">Delete</button>
+        `;
+
+        list.appendChild(li);
+    });
+}
+
+function deleteStudent(id) {
+    fetch(`/delete/${id}`, {
+        method: "DELETE"
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        loadStudents();
+    });
+}
+
+function editStudent(id, oldName, oldAge) {
+    let name = prompt("Enter new name:", oldName);
+    let age = prompt("Enter new age:", oldAge);
+
+    fetch(`/update/${id}`, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name, age})
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        loadStudents();
+    });
+}
+
+function searchStudent() {
+    let name = document.getElementById("searchName").value;
+
+    fetch(`/search?name=${name}`)
+    .then(res => res.json())
+    .then(showData);
+}
+
+function filterStudent() {
+    let age = document.getElementById("filterAge").value;
+
+    fetch(`/filter?age=${age}`)
+    .then(res => res.json())
+    .then(showData);
+}
+
+function loadCount() {
+    fetch("/count")
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("total").innerText = data.total;
+    });
+}
+
+loadStudents();
+</script>
+
+</body>
+</html>
